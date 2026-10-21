@@ -1,7 +1,7 @@
 import { createHash, randomBytes, scrypt as scryptCb, timingSafeEqual, type ScryptOptions } from "node:crypto";
 import type { Context } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
-import { db, type UserRow } from "./db.ts";
+import { db, rowToUser, type UserRow } from "./db.ts";
 
 const scrypt = (password: string, salt: Buffer, keylen: number, opts: ScryptOptions) =>
   new Promise<Buffer>((res, rej) => scryptCb(password, salt, keylen, opts, (e, k) => (e ? rej(e) : res(k))));
@@ -34,13 +34,14 @@ export const COOKIE = "bu_session";
 const SESSION_DAYS = 30;
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 
-export function createSession(c: Context, userId: string): void {
+export async function createSession(c: Context, userId: string): Promise<void> {
   const token = randomBytes(32).toString("base64url");
   const now = new Date();
   const expires = new Date(now.getTime() + SESSION_DAYS * 86_400_000);
-  db.prepare("INSERT INTO sessions (token_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)").run(
-    sha256(token), userId, now.toISOString(), expires.toISOString(),
-  );
+  await db.execute({
+    sql: "INSERT INTO sessions (token_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
+    args: [sha256(token), userId, now.toISOString(), expires.toISOString()],
+  });
   setSessionCookie(c, token, expires);
 }
 
@@ -48,7 +49,7 @@ function setSessionCookie(c: Context, token: string, expires: Date): void {
   setCookie(c, COOKIE, token, {
     httpOnly: true,
     sameSite: "Lax",
-    // Secure whenever the site is served over HTTPS (hosts like Railway terminate TLS at a proxy).
+    // Secure whenever the site is served over HTTPS (hosts like Railway/Vercel terminate TLS at a proxy).
     secure: process.env.NODE_ENV === "production" || c.req.header("x-forwarded-proto") === "https",
     path: "/",
     expires,
@@ -58,37 +59,37 @@ function setSessionCookie(c: Context, token: string, expires: Date): void {
 /** Sessions slide: using BridgeUni at least once a month keeps you logged in. Renewed at most daily. */
 const RENEW_AFTER_MS = 86_400_000;
 
-export function currentUser(c: Context): UserRow | null {
+export async function currentUser(c: Context): Promise<UserRow | null> {
   const token = getCookie(c, COOKIE);
   if (!token) return null;
   const hash = sha256(token);
   const now = new Date();
-  const row = db
-    .prepare(
-      `SELECT u.*, s.expires_at AS session_expires FROM sessions s JOIN users u ON u.id = s.user_id
-       WHERE s.token_hash = ? AND s.expires_at > ?`,
-    )
-    .get(hash, now.toISOString()) as (UserRow & { session_expires: string }) | undefined;
+  const result = await db.execute({
+    sql: `SELECT u.*, s.expires_at AS session_expires FROM sessions s JOIN users u ON u.id = s.user_id
+          WHERE s.token_hash = ? AND s.expires_at > ?`,
+    args: [hash, now.toISOString()],
+  });
+  const row = result.rows[0];
   if (!row) return null;
 
+  const sessionExpires = row.session_expires as string;
   const fullLength = SESSION_DAYS * 86_400_000;
-  if (Date.parse(row.session_expires) - now.getTime() < fullLength - RENEW_AFTER_MS) {
+  if (Date.parse(sessionExpires) - now.getTime() < fullLength - RENEW_AFTER_MS) {
     const expires = new Date(now.getTime() + fullLength);
-    db.prepare("UPDATE sessions SET expires_at = ? WHERE token_hash = ?").run(expires.toISOString(), hash);
+    await db.execute({ sql: "UPDATE sessions SET expires_at = ? WHERE token_hash = ?", args: [expires.toISOString(), hash] });
     setSessionCookie(c, token, expires);
   }
-  const { session_expires: _unused, ...user } = row;
-  return user;
+  return rowToUser(row);
 }
 
-export function endSession(c: Context): void {
+export async function endSession(c: Context): Promise<void> {
   const token = getCookie(c, COOKIE);
-  if (token) db.prepare("DELETE FROM sessions WHERE token_hash = ?").run(sha256(token));
+  if (token) await db.execute({ sql: "DELETE FROM sessions WHERE token_hash = ?", args: [sha256(token)] });
   deleteCookie(c, COOKIE, { path: "/" });
 }
 
-export function purgeExpiredSessions(): void {
-  db.prepare("DELETE FROM sessions WHERE expires_at <= ?").run(new Date().toISOString());
+export async function purgeExpiredSessions(): Promise<void> {
+  await db.execute({ sql: "DELETE FROM sessions WHERE expires_at <= ?", args: [new Date().toISOString()] });
 }
 
 /* ---------- Simple in-memory rate limit for login / sign-up ---------- */

@@ -1,16 +1,22 @@
 import { mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { DatabaseSync } from "node:sqlite";
+import { createClient, type Row } from "@libsql/client";
 
-const DB_PATH = resolve(process.env.DATABASE_PATH ?? "data/bridgeuni.db");
-mkdirSync(dirname(DB_PATH), { recursive: true });
+const remoteUrl = process.env.TURSO_DATABASE_URL;
+const authToken = process.env.TURSO_AUTH_TOKEN;
 
-export const db = new DatabaseSync(DB_PATH);
+function localFileUrl(): string {
+  const dbPath = resolve(process.env.DATABASE_PATH ?? "data/bridgeuni.db");
+  mkdirSync(dirname(dbPath), { recursive: true });
+  return `file:${dbPath}`;
+}
 
-db.exec(`
-  PRAGMA journal_mode = WAL;
-  PRAGMA foreign_keys = ON;
+export const db = remoteUrl ? createClient({ url: remoteUrl, authToken }) : createClient({ url: localFileUrl() });
 
+if (!remoteUrl) await db.execute("PRAGMA journal_mode = WAL");
+await db.execute("PRAGMA foreign_keys = ON");
+
+await db.executeMultiple(`
   CREATE TABLE IF NOT EXISTS users (
     id              TEXT PRIMARY KEY,
     identifier      TEXT NOT NULL UNIQUE,          -- normalised email or +27 phone
@@ -68,4 +74,13 @@ export const toPublic = (u: UserRow): PublicUser => ({
   kind: u.identifier_kind,
   name: u.name,
   createdAt: u.created_at,
+});
+
+export const rowToUser = (row: Row): UserRow => ({
+  id: row.id as string,
+  identifier: row.identifier as string,
+  identifier_kind: row.identifier_kind as "email" | "phone",
+  name: row.name as string,
+  password_hash: row.password_hash as string,
+  created_at: row.created_at as string,
 });

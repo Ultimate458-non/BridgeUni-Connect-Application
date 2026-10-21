@@ -14,3 +14,6 @@ data
 
 # Router plugin cache
 .tanstack
+
+# Local Claude Code state
+.claude
