@@ -1,0 +1,16 @@
+node_modules
+dist
+*.local
+
+# User accounts database (personal data) — never commit
+data
+*.db
+*.db-shm
+*.db-wal
+
+# Secrets
+.env
+.env.*
+
+# Router plugin cache
+.tanstack

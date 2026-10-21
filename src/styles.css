@@ -1,0 +1,307 @@
+@import "tailwindcss";
+
+/* Palette — the only place colors are defined. Components use the semantic tokens. */
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.26 0.03 260);
+  --surface: oklch(0.975 0.006 250);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.26 0.03 260);
+  --muted: oklch(0.955 0.008 250);
+  --muted-foreground: oklch(0.5 0.025 260);
+  --placeholder: oklch(0.66 0.015 260);
+  --border: oklch(0.9 0.012 255);
+  --border-strong: oklch(0.8 0.02 255);
+
+  /* Brand — from the BridgeUni logo */
+  --brand-navy: #13293e; /* "BRIDGE" and the upper arc */
+  --brand-blue: #1c98e0; /* "UNI" and the bridge — large/bold use only (3.2:1 on white) */
+  --brand-tagline: #205d86;
+
+  /* Deeper shade of the logo blue so white button text stays readable (5.0:1) */
+  --primary: #1673b8;
+  --primary-hover: #115e97;
+  --primary-foreground: oklch(1 0 0);
+  --primary-soft: #e8f4fc;
+  --primary-deep: var(--brand-navy);
+
+  --accent: oklch(0.8 0.15 75);
+  --accent-foreground: oklch(0.26 0.05 60);
+  --accent-soft: oklch(0.96 0.05 85);
+
+  --success: oklch(0.55 0.13 155);
+  --success-soft: oklch(0.95 0.04 155);
+  --danger: oklch(0.55 0.2 27);
+  --danger-soft: oklch(0.96 0.03 27);
+
+  /* One hue per learning sector (tiles, card strips, icons) */
+  --sector-tech: oklch(0.55 0.16 256);
+  --sector-business: oklch(0.52 0.12 180);
+  --sector-marketing: oklch(0.58 0.19 340);
+  --sector-healthcare: oklch(0.57 0.18 25);
+  --sector-agriculture: oklch(0.56 0.14 140);
+  --sector-jobskills: oklch(0.6 0.15 60);
+
+  --ring: var(--brand-blue);
+  --ink: oklch(0 0 0); /* the CV sheet: pure black on white */
+  --radius: 0.75rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-deep: var(--primary-deep);
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-tagline: var(--brand-tagline);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-soft: var(--accent-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-ring: var(--ring);
+  --color-ink: var(--ink);
+
+  --font-sans: "Nunito Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Nunito", "Nunito Sans", ui-sans-serif, system-ui, sans-serif;
+  /* The printed CV uses a font every computer and ATS parser already has. */
+  --font-cv: Arial, Helvetica, "Liberation Sans", sans-serif;
+
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: var(--radius);
+  --radius-xl: 1rem;
+  --shadow-card: 0 1px 2px oklch(0.26 0.03 260 / 0.06), 0 4px 16px oklch(0.26 0.03 260 / 0.06);
+  --shadow-lift: 0 2px 4px oklch(0.26 0.03 260 / 0.06), 0 12px 32px oklch(0.26 0.03 260 / 0.12);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+  :focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: var(--primary-soft);
+  }
+}
+
+/* ---------- Reusable utilities (Tailwind v4: @utility, not @apply of a custom class) ---------- */
+
+@utility panel {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--card-foreground);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+}
+
+@utility btn-solid {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.625rem 1.25rem;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-md);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-weight: 700;
+  font-size: 0.9375rem;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+  &:hover {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+  }
+  &:disabled {
+    cursor: default;
+    opacity: 0.55;
+    background: var(--primary);
+  }
+}
+
+@utility btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.625rem 1.25rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  color: var(--foreground);
+  font-weight: 700;
+  font-size: 0.9375rem;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  &:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: var(--primary-soft);
+  }
+  &:disabled {
+    cursor: default;
+    opacity: 0.6;
+    background: var(--card);
+    color: var(--foreground);
+    border-color: var(--border-strong);
+  }
+}
+
+@utility btn-success {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.625rem 1.25rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--success-soft);
+  color: var(--success);
+  font-weight: 700;
+  font-size: 0.9375rem;
+  line-height: 1.2;
+}
+
+@utility field {
+  display: block;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 1rem; /* 16px stops mobile zoom-on-focus */
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+  &::placeholder {
+    color: var(--placeholder);
+    opacity: 1;
+  }
+  &:hover {
+    border-color: var(--muted-foreground);
+  }
+  &:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-soft);
+  }
+  &[aria-invalid="true"] {
+    border-color: var(--danger);
+  }
+}
+
+@utility label {
+  display: block;
+  margin-bottom: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+@utility tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.625rem;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+@utility link {
+  color: var(--primary);
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  &:hover {
+    color: var(--primary-hover);
+    text-decoration-thickness: 2px;
+  }
+}
+
+/* ---------- Print: only the CV sheet, black on white ---------- */
+@page {
+  size: A4;
+  margin: 14mm;
+}
+
+@media print {
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  #cv-preview {
+    position: static !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+  .print-shell {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+  .print-area {
+    box-shadow: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+    color: #000 !important;
+    background: #fff !important;
+  }
+  .print-area * {
+    color: #000 !important;
+    background: transparent !important;
+    border-color: #000 !important;
+  }
+}
