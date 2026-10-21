@@ -17,3 +17,6 @@ data
 
 # Local Claude Code state
 .claude
+
+.vercel
+.env*
